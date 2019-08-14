@@ -5,7 +5,10 @@
 
 module Chronos.Internal.CTimespec
   (
-#ifndef mingw32_HOST_OS
+#ifdef mingw32_HOST_OS
+    SystemTime(..)
+  , getSystemTime
+#else
     getPosixNanoseconds
   , CTimespec(..)
 #endif
@@ -23,6 +26,46 @@ getPosixNanoseconds = do
   pure $ fromIntegral $ 1000000 * (round x)
 
 #elif defined(mingw32_HOST_OS)
+
+data SystemTime = SystemTime
+  { wYear         :: {-# UNPACK #-} !Word16
+  , wMonth        :: {-# UNPACK #-} !Word16
+  , wDayOfWeek    :: {-# UNPACK #-} !Word16
+  , wDay          :: {-# UNPACK #-} !Word16
+  , wHour         :: {-# UNPACK #-} !Word16
+  , wMinute       :: {-# UNPACK #-} !Word16
+  , wSecond       :: {-# UNPACK #-} !Word16
+  , wMilliseconds :: {-# UNPACK #-} !Word16
+  }
+  deriving (Eq, Show)
+
+instance Storable SystemTime where
+  sizeOf _ = 16
+  alignment _ = alignment (undefined :: Word16)
+  peek p = SystemTime
+    <$> peekByteOff p 0
+    <*> peekByteOff p 4
+    <*> peekByteOff p 8
+    <*> peekByteOff p 12
+    <*> peekByteOff p 16
+    <*> peekByteOff p 20
+    <*> peekByteOff p 24
+    <*> peekByteOff p 28
+  poke p (SystemTime a b c d e f g h) = do
+    pokeByteOff p 0  a
+    pokeByteOff p 4  b
+    pokeByteOff p 8  c
+    pokeByteOff p 12 d
+    pokeByteOff p 16 e
+    pokeByteOff p 20 f
+    pokeByteOff p 24 g
+    pokeByteOff p 28 h
+
+foreign import ccall unsafe "windows.h GetSystemTime"
+  get_system_time :: Ptr SystemTime -> IO CInt
+
+getSystemTime :: IO SystemTime
+getSystemTime = alloca $ \p -> get_system_time p *> peek p
 
 #else
 

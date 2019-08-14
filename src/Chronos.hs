@@ -280,8 +280,7 @@ import qualified Data.Vector.Unboxed as UVector
 import qualified System.Clock as CLK
 
 #ifdef mingw32_HOST_OS
-import System.Win32.Time (SYSTEMTIME(..))
-import qualified System.Win32.Time as W32
+import Chronos.Internal.CTimespec (getSystemTime, SystemTime(..))
 #else
 import Chronos.Internal.CTimespec (getPosixNanoseconds)
 #endif
@@ -463,7 +462,7 @@ yesterday = fmap (add (-1) . timeToDayTruncate) now
 now :: IO Time
 #ifdef mingw32_HOST_OS
 now = do
-  SYSTEMTIME{..} <- W32.getSystemTime
+  SystemTime{..} <- getSystemTime
   let date = Date
         { dateYear  = Year       (fromIntegral wYear)
         , dateMonth = Month      (fromIntegral wMonth)
